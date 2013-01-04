@@ -1,9 +1,15 @@
+# Compiled Code #
+/.classpath
 *.class
+/bin
 
 # Package Files #
-*.jar
 *.war
 *.ear
-/config
-/.classpath
+
+# Eclipse Files #
 /.project
+
+
+# Program Settings #
+/config
