@@ -40,25 +40,25 @@ public class Timer extends JFrame implements ActionListener {
   public static Launcher launcher;
   protected static PeriodFormatter format_full = new PeriodFormatterBuilder()
     .printZeroIfSupported()
-    .appendDays().appendSeparator(" ")
-    .minimumPrintedDigits(2)
+    .minimumPrintedDigits(1)
     .appendHours().appendSeparator(":")
+    .minimumPrintedDigits(2)
     .appendMinutes().appendSeparator(":")
     .appendSeconds().appendSeparator(".")
     .minimumPrintedDigits(3)
     .appendMillis()
     .toFormatter();
   protected static PeriodFormatter format_short = new PeriodFormatterBuilder()
-    .appendDays().appendSeparatorIfFieldsBefore(" ")
-    .minimumPrintedDigits(2)
+    .minimumPrintedDigits(1)
     .appendHours().appendSeparatorIfFieldsBefore(":")
+    .minimumPrintedDigits(2)
     .appendMinutes().appendSeparatorIfFieldsBefore(":")
     .printZeroIfSupported()
     .appendSeconds().appendSeparator(".")
     .minimumPrintedDigits(3)
     .appendMillis()
     .toFormatter();
-  protected static PeriodType period_type = PeriodType.dayTime();
+  protected static PeriodType period_type = PeriodType.time();
   
   public DateTime started;
   public ArrayList<TimeSpan> times = new ArrayList<TimeSpan>();
@@ -98,7 +98,7 @@ public class Timer extends JFrame implements ActionListener {
     c.gridy = 0;
     c.gridwidth = 2;
     total = new JLabel();
-    total.setText("0 00:00:00.000");
+    total.setText("0000:00:00.000");
     total.setHorizontalAlignment(JLabel.RIGHT);
     Font font = total.getFont().deriveFont((float)20);
     total.setFont(font);
@@ -107,7 +107,7 @@ public class Timer extends JFrame implements ActionListener {
     c.insets = new Insets(0,5,5,5);
     c.gridy = 1;
     time = new JLabel();
-    time.setText("0 00:00:00.000");
+    time.setText("0000:00:00.000");
     time.setHorizontalAlignment(JLabel.RIGHT);
     time.setFont(font);
     add(time, c);
