@@ -36,9 +36,9 @@ import org.joda.time.format.PeriodFormatterBuilder;
  *
  */
 public class Timer extends JFrame implements ActionListener {
-  private static final long serialVersionUID = -5610732114416563838L;
-  public static Launcher launcher;
-  protected static PeriodFormatter format_full = new PeriodFormatterBuilder()
+  static private final long serialVersionUID = -5610732114416563838L;
+  static public Launcher launcher;
+  static protected PeriodFormatter format_full = new PeriodFormatterBuilder()
     .printZeroIfSupported()
     .minimumPrintedDigits(1)
     .appendHours().appendSeparator(":")
@@ -48,7 +48,7 @@ public class Timer extends JFrame implements ActionListener {
     .minimumPrintedDigits(3)
     .appendMillis()
     .toFormatter();
-  protected static PeriodFormatter format_short = new PeriodFormatterBuilder()
+  static protected PeriodFormatter format_short = new PeriodFormatterBuilder()
     .minimumPrintedDigits(1)
     .appendHours().appendSeparatorIfFieldsBefore(":")
     .minimumPrintedDigits(2)
@@ -58,7 +58,8 @@ public class Timer extends JFrame implements ActionListener {
     .minimumPrintedDigits(3)
     .appendMillis()
     .toFormatter();
-  protected static PeriodType period_type = PeriodType.time();
+  static protected PeriodType period_type = PeriodType.time();
+  static final Color transparent = new Color(0,0,0,0);
   
   public DateTime started;
   public ArrayList<TimeSpan> times = new ArrayList<TimeSpan>();
@@ -84,12 +85,14 @@ public class Timer extends JFrame implements ActionListener {
   protected MousePopupListener popup_listener = new MousePopupListener();
   
   public Timer() {
-    setBackground(new Color(0,0,0,0));
+    setBackground(Timer.transparent);
     setSize(new Dimension(300,100));
     setLocationRelativeTo(null);
-    setContentPane(panel);
-    setLayout(new GridBagLayout());
     
+    panel.setBackground(Timer.transparent);
+    setContentPane(new AlphaContainer(panel));
+    
+    setLayout(new GridBagLayout());
     GridBagConstraints c = new GridBagConstraints();
     
     c.insets = new Insets(5,5,5,5);
@@ -113,48 +116,32 @@ public class Timer extends JFrame implements ActionListener {
     add(time, c);
     
     popup = new JPopupMenu();
-    
-    miToggle = new JMenuItem(started == null ? "Start" : "Stop");
-    miToggle.addActionListener(this);
-    miToggle.setActionCommand("toggle");
-    miToggle.setMnemonic('s');
+    miToggle = createMenuItem(started == null ? "Start" : "Stop", this, "toggle", 's');
     popup.add(miToggle);
-
-    miAdjust = new JMenuItem("Adjust");
-    miAdjust.addActionListener(this);
-    miAdjust.setActionCommand("adjust");
-    miAdjust.setMnemonic('a');
+    miAdjust = createMenuItem("Adjust", this, "adjust", 'a');
     popup.add(miAdjust);
-    
-    miForeground = new JMenuItem("Foreground");
-    miForeground.addActionListener(this);
-    miForeground.setActionCommand("foreground");
-    miForeground.setMnemonic('f');
+    miForeground = createMenuItem("Foreground", this, "foreground", 'f');
     popup.add(miForeground);
-
-    miBackground = new JMenuItem("Background");
-    miBackground.addActionListener(this);
-    miBackground.setActionCommand("background");
-    miBackground.setMnemonic('b');
+    miBackground = createMenuItem("Background", this, "background", 'b');
     popup.add(miBackground);
-
-    miTransparent = new JMenuItem("Transparent");
-    miTransparent.addActionListener(this);
-    miTransparent.setActionCommand("transparent");
-    miTransparent.setMnemonic('b');
+    miTransparent = createMenuItem("Transparent", this, "transparent", 't');
     popup.add(miTransparent);
-    
-    miDelete = new JMenuItem("Delete");
-    miDelete.addActionListener(this);
-    miDelete.setActionCommand("delete");
-    miDelete.setMnemonic('d');
+    miDelete = createMenuItem("Delete", this, "delete", 'd');
     popup.add(miDelete);
-
     addMouseListener(popup_listener);
 
     timer = new javax.swing.Timer(this.update_speed, this);
     timer.setActionCommand("tick");
     if (started != null) { timer.start(); }
+  }
+  
+  protected JMenuItem createMenuItem(String text, ActionListener listener, String command, char mnemonic) {
+    JMenuItem mi = new JMenuItem();
+    mi.setText(text);
+    mi.addActionListener(listener);
+    mi.setActionCommand(command);
+    mi.setMnemonic(mnemonic);
+    return mi;
   }
   
   @Override
@@ -214,7 +201,7 @@ public class Timer extends JFrame implements ActionListener {
   }
   protected void actionForeground() {
     Color color = JColorChooser.showDialog(this, "Foreground", panel.getForeground());
-    if (color != null) { panel.setForeground(color); }
+    if (color != null) { total.setForeground(color); time.setForeground(color); }
   }
   protected void actionBackground() {
     Color color = JColorChooser.showDialog(this, "Background", panel.getBackground());
@@ -222,9 +209,7 @@ public class Timer extends JFrame implements ActionListener {
   }
   protected void actionTransparent() {
     dispose();
-    setUndecorated(true);
-    panel.setBackground(new Color(0,0,0,0));
-    pack();
+    panel.setBackground(Timer.transparent);
     setVisible(true);
   }
   protected void actionDelete() {
