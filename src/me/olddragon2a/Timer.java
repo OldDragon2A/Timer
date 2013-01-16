@@ -89,7 +89,7 @@ public class Timer extends JFrame implements ActionListener {
     setBackground(Timer.transparent);
     setSize(new Dimension(300,100));
     setLocationRelativeTo(null);
-    panel.setBackground(Timer.transparent);
+    panel.setBackground(Color.white);
     setContentPane(new AlphaContainer(panel));
     setLayout(new GridBagLayout());
     
