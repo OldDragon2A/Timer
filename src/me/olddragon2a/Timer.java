@@ -25,6 +25,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 
+import org.jdom2.Element;
 import org.joda.time.DateTime;
 import org.joda.time.Period;
 import org.joda.time.PeriodType;
@@ -71,15 +72,15 @@ public class Timer extends JFrame implements ActionListener {
    * Controls
    */
   protected JPanel panel = new JPanel();
-  protected JPopupMenu popup;
-  protected JLabel total;
-  protected JLabel time;
-  protected JMenuItem miToggle;
-  protected JMenuItem miAdjust;
-  protected JMenuItem miForeground;
-  protected JMenuItem miBackground;
-  protected JMenuItem miTransparent;
-  protected JMenuItem miDelete;
+  protected JLabel total = new JLabel();
+  protected JLabel time = new JLabel();
+  protected JPopupMenu popup = new JPopupMenu();
+  protected JMenuItem miToggle = createMenuItem("Start", this, "toggle", 's');
+  protected JMenuItem miAdjust = createMenuItem("Adjust", this, "adjust", 'a');
+  protected JMenuItem miForeground = createMenuItem("Foreground", this, "foreground", 'f');
+  protected JMenuItem miBackground = createMenuItem("Background", this, "background", 'b');
+  protected JMenuItem miTransparent = createMenuItem("Transparent", this, "transparent", 't');
+  protected JMenuItem miDelete = createMenuItem("Delete", this, "delete", 'd');
   
   protected javax.swing.Timer timer;
   protected MousePopupListener popup_listener = new MousePopupListener();
@@ -88,11 +89,10 @@ public class Timer extends JFrame implements ActionListener {
     setBackground(Timer.transparent);
     setSize(new Dimension(300,100));
     setLocationRelativeTo(null);
-    
     panel.setBackground(Timer.transparent);
     setContentPane(new AlphaContainer(panel));
-    
     setLayout(new GridBagLayout());
+    
     GridBagConstraints c = new GridBagConstraints();
     
     c.insets = new Insets(5,5,5,5);
@@ -100,7 +100,6 @@ public class Timer extends JFrame implements ActionListener {
     c.gridx = 0;
     c.gridy = 0;
     c.gridwidth = 2;
-    total = new JLabel();
     total.setText("0000:00:00.000");
     total.setHorizontalAlignment(JLabel.RIGHT);
     Font font = total.getFont().deriveFont((float)20);
@@ -109,24 +108,16 @@ public class Timer extends JFrame implements ActionListener {
     
     c.insets = new Insets(0,5,5,5);
     c.gridy = 1;
-    time = new JLabel();
     time.setText("0000:00:00.000");
     time.setHorizontalAlignment(JLabel.RIGHT);
     time.setFont(font);
     add(time, c);
     
-    popup = new JPopupMenu();
-    miToggle = createMenuItem(started == null ? "Start" : "Stop", this, "toggle", 's');
     popup.add(miToggle);
-    miAdjust = createMenuItem("Adjust", this, "adjust", 'a');
     popup.add(miAdjust);
-    miForeground = createMenuItem("Foreground", this, "foreground", 'f');
     popup.add(miForeground);
-    miBackground = createMenuItem("Background", this, "background", 'b');
     popup.add(miBackground);
-    miTransparent = createMenuItem("Transparent", this, "transparent", 't');
     popup.add(miTransparent);
-    miDelete = createMenuItem("Delete", this, "delete", 'd');
     popup.add(miDelete);
     addMouseListener(popup_listener);
 
@@ -134,7 +125,34 @@ public class Timer extends JFrame implements ActionListener {
     timer.setActionCommand("tick");
     if (started != null) { timer.start(); }
   }
-  
+  public Timer(Element timer) {
+    this();
+    
+    setTitle(timer.getChildTextNormalize("title"));
+    String started = timer.getChildTextNormalize("started");
+    this.started = started.isEmpty() ? null : DateTime.parse(started);
+    if (this.started != null) { this.timer.start(); }
+    period = Period.parse(timer.getChildTextNormalize("total"));
+    
+    update_speed = Integer.parseInt(timer.getChildTextNormalize("speed"), 10);
+    this.timer.setDelay(update_speed);
+    if (this.started != null) { this.timer.start(); }
+    
+    setLocation(Integer.parseInt(timer.getChildTextNormalize("x"), 10), Integer.parseInt(timer.getChildTextNormalize("y"), 10));
+    setSize(Integer.parseInt(timer.getChildTextNormalize("width"), 10), Integer.parseInt(timer.getChildTextNormalize("height"), 10));
+    
+    Color foreground = new Color((int) Long.parseLong(timer.getChildTextNormalize("foreground"), 16), true);
+    total.setForeground(foreground);
+    time.setForeground(foreground);
+    Color background = new Color((int) Long.parseLong(timer.getChildTextNormalize("background"), 16), true);
+    panel.setBackground(background);
+    
+    Element times = timer.getChild("times");
+    for(Element ts : times.getChildren()) { this.times.add(new TimeSpan(ts)); }
+    
+    updateTimes();
+    setVisible(Boolean.parseBoolean(timer.getChildText("visible")));
+  }
   protected JMenuItem createMenuItem(String text, ActionListener listener, String command, char mnemonic) {
     JMenuItem mi = new JMenuItem();
     mi.setText(text);
@@ -219,6 +237,30 @@ public class Timer extends JFrame implements ActionListener {
       Timer.launcher.timers.remove(this);
       Timer.launcher.combobox.removeItem(this);
     }
+  }
+  
+  public Element toXML() {
+    Element result = new Element("timer");
+    
+    XMLUtil.createElement("title", getTitle(), result);
+    XMLUtil.createElement("started", started == null ? "" : started.toString(), result);
+    XMLUtil.createElement("total", period.toString(), result);
+    XMLUtil.createElement("speed", update_speed, result);
+    
+    XMLUtil.createElement("x", getX(), result);
+    XMLUtil.createElement("y", getY(), result);
+    XMLUtil.createElement("width", getWidth(), result);
+    XMLUtil.createElement("height", getHeight(), result);
+    
+    XMLUtil.createElement("foreground", String.format("%08x", total.getForeground().getRGB()), result);
+    XMLUtil.createElement("background", String.format("%08x", panel.getBackground().getRGB()), result);
+    
+    XMLUtil.createElement("visible", isVisible(), result);
+    
+    Element times = new Element("times");
+    for(TimeSpan ts : this.times) { times.addContent(ts.toXML()); }
+    result.addContent(times);
+    return result;
   }
   
   class MousePopupListener extends MouseAdapter implements Serializable {

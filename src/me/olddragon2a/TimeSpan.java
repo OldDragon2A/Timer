@@ -2,6 +2,7 @@ package me.olddragon2a;
 
 import java.io.Serializable;
 
+import org.jdom2.Element;
 import org.joda.time.DateTime;
 import org.joda.time.Period;
 
@@ -20,24 +21,26 @@ public class TimeSpan implements Serializable {
     this.stop = stop;
     this.period = new Period(start, stop);
   }
-
-  public DateTime getStart() {
-    return start;
-  }
-
-  public void setStart(DateTime start) {
-    this.start = start;
-  }
-
-  public DateTime getStop() {
-    return stop;
-  }
-
-  public void setStop(DateTime stop) {
-    this.stop = stop;
-  }
   
-  public Period getPeriod() {
-    return this.period;
+  public TimeSpan(Element timespan) {
+    this.start = DateTime.parse(timespan.getChildTextNormalize("start"));
+    this.stop = DateTime.parse(timespan.getChildTextNormalize("stop"));
+    this.period = new Period(start, stop);
+  }
+
+  public DateTime getStart() { return start; }
+  public void setStart(DateTime start) { this.start = start; this.period = new Period(start, stop);}
+
+  public DateTime getStop() { return stop; }
+  public void setStop(DateTime stop) { this.stop = stop; this.period = new Period(start, stop); }
+  
+  public Period getPeriod() { return this.period; }
+  
+  public Element toXML() {
+    Element result = new Element("timespan");
+    XMLUtil.createElement("start", start.toString(), result);
+    XMLUtil.createElement("stop", stop.toString(), result);
+    XMLUtil.createElement("period", period.toString(), result);
+    return result;
   }
 }

@@ -16,16 +16,22 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
+
+import org.jdom2.Document;
+import org.jdom2.Element;
+import org.jdom2.JDOMException;
+import org.jdom2.input.SAXBuilder;
+import org.jdom2.output.Format;
+import org.jdom2.output.XMLOutputter;
 
 /**
  * @author OldDragon2A
@@ -33,7 +39,7 @@ import javax.swing.SwingUtilities;
  */
 public class Launcher extends JFrame implements ActionListener, WindowListener {
   private static final long serialVersionUID = 5283999368979262806L;
-  protected ArrayList<Timer> timers;
+  protected ArrayList<Timer> timers = new ArrayList<Timer>();
   protected JComboBox<Timer> combobox;
   protected JTextField label;
   
@@ -41,8 +47,6 @@ public class Launcher extends JFrame implements ActionListener, WindowListener {
    * @throws HeadlessException
    */
   public Launcher() throws HeadlessException {
-    timers = new ArrayList<Timer>();
-    
     addWindowListener(this);
     
     setBackground(new Color(0,0,0,0));
@@ -92,16 +96,22 @@ public class Launcher extends JFrame implements ActionListener, WindowListener {
   @Override
   public void actionPerformed(ActionEvent e) {
     if (e.getActionCommand().equals("add")) {
-      Timer timer = new Timer();
-      if (!label.getText().isEmpty()) { timer.setTitle(label.getText()); }
-      timers.add(timer);
-      combobox.addItem(timer);
-      timer.pack();
-      timer.setVisible(true);
+      actionAdd();
     } else if (e.getActionCommand().equals("toggle")) {
-      Timer timer = combobox.getItemAt(combobox.getSelectedIndex());
-      if (timer != null) { timer.setVisible(! timer.isVisible()); }
+      actionToggle();
     }
+  }
+  protected void actionAdd() {
+    Timer timer = new Timer();
+    if (!label.getText().isEmpty()) { timer.setTitle(label.getText()); }
+    timers.add(timer);
+    combobox.addItem(timer);
+    timer.pack();
+    timer.setVisible(true);
+  }
+  protected void actionToggle() {
+    Timer timer = combobox.getItemAt(combobox.getSelectedIndex());
+    if (timer != null) { timer.setVisible(! timer.isVisible()); }
   }
 
   public static void main(String[] args) {
@@ -116,23 +126,18 @@ public class Launcher extends JFrame implements ActionListener, WindowListener {
     });
   }
   
-  @SuppressWarnings("unchecked")
   protected void load() {
-    File config = new java.io.File("config");
+    File config = new java.io.File("config.xml");
     if (config.exists()) {
       try {
-        FileInputStream fis = new FileInputStream(config);
-        ObjectInputStream ois = new ObjectInputStream(fis);
-        this.timers = (ArrayList<Timer>) ois.readObject();
-        ois.close();
-        fis.close();
-      } catch (IOException i) {
-        i.printStackTrace();
-        return;
-      } catch (ClassNotFoundException c) {
-        c.printStackTrace();
-        return;
+        SAXBuilder builder = new SAXBuilder();
+        Document doc = builder.build(new FileInputStream(config));
+        timers = new ArrayList<Timer>();
+        for (Element t : doc.getRootElement().getChildren()) { timers.add(new Timer(t)); }
+      } catch (JDOMException | IOException e) {
+        JOptionPane.showMessageDialog(this, e.toString(), "Error", JOptionPane.ERROR_MESSAGE);
       }
+      
       for (Timer timer : this.timers) {
         combobox.addItem(timer);
         if (timer.started != null) { timer.timer.start(); }
@@ -140,29 +145,25 @@ public class Launcher extends JFrame implements ActionListener, WindowListener {
       }
     }
   }
-  
   protected void save() {
-    for (Timer timer : this.timers) { timer.was_visible = timer.isVisible(); }
     try {
-      FileOutputStream fos = new FileOutputStream("config");
-      ObjectOutputStream oos = new ObjectOutputStream(fos);
-      oos.writeObject(this.timers);
-      oos.close();
-      fos.close();
-    } catch (IOException i) {
-      i.printStackTrace();
+      Element timers = new Element("timers");
+      Document doc = new Document(timers);
+      for(Timer t : this.timers) { timers.addContent(t.toXML()); }
+      
+      XMLOutputter xout = new XMLOutputter();
+      xout.setFormat(Format.getPrettyFormat());
+      xout.output(doc, new FileOutputStream("config.xml"));
+    } catch (IOException e) {
+      JOptionPane.showMessageDialog(this, e.toString(), "Error", JOptionPane.ERROR_MESSAGE);
     }
+    
   }
 
   @Override
-  public void windowOpened(WindowEvent e) {
-    load();
-  }
-
+  public void windowOpened(WindowEvent e) { load(); }
   @Override
-  public void windowClosing(WindowEvent e) {
-    save();
-  }
+  public void windowClosing(WindowEvent e) { save(); }
 
   @Override
   public void windowClosed(WindowEvent e) {}
